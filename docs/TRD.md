@@ -437,33 +437,33 @@ Komputer operator yang bertugas menampilkan grid CCTV di browser harus memiliki 
 
 ```mermaid
 flowchart LR
-    subgraph Cameras["100+ CCTV (Edge)"]
+    subgraph Cameras["100+ CCTV Edge"]
         direction TB
-        C1["CCTV 01 (Main + Sub)"]
-        C2["CCTV 02 (Main + Sub)"]
-        CN["CCTV 100 (Main + Sub)"]
+        C1["CCTV 01 - Main and Sub"]
+        C2["CCTV 02 - Main and Sub"]
+        CN["CCTV 100 - Main and Sub"]
     end
 
-    subgraph ServerCore["Streaming Engine & Cache"]
+    subgraph ServerCore["Streaming Engine and Cache"]
         direction TB
-        LAZY["On-Demand Ingest (Active Viewers Only)"]
-        COPY["Zero-Transcode Passthrough (-c:v copy)"]
-        REDIS[("Redis Cache: State & Metadata")]
-        MYSQL[("MySQL 8.0: Compound Indexed")]
+        LAZY["On-Demand Ingest Worker"]
+        COPY["Zero-Transcode Passthrough -c:v copy"]
+        REDIS[("Redis In-Memory Cache")]
+        MYSQL[("MySQL 8.0 Indexed DB")]
     end
 
     subgraph ClientOpt["Browser Operator"]
         direction TB
-        VIRT["DOM Virtualization (Max 16 Active)"]
+        VIRT["DOM Virtualization Grid"]
         HWACC["GPU Hardware Decoded Canvas"]
     end
 
-    Cameras -->|Sub-Stream (400 kbps)| LAZY
+    C1 & C2 & CN -->|"Sub-Stream RTSP 400 kbps"| LAZY
     LAZY --> COPY
-    COPY --> REDIS
-    COPY -->|WebSocket fMP4| VIRT
+    COPY -->|"WebSocket fMP4"| VIRT
     VIRT --> HWACC
-    ServerCore <--> MYSQL
+    LAZY <--> REDIS
+    COPY <--> MYSQL
 ```
 
 1. **On-Demand Lazy Ingestion:**  
