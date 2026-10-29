@@ -108,7 +108,7 @@ $totalEvents = MotionEvent::all([], 1, 1)['total'] ?? 0;
         <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; align-items: center; justify-content: space-between;">
             <div>
                 <div style="font-size: 0.7rem; color: #64748b;">LISENSI & REPOSITORI</div>
-                <div style="font-size: 0.8rem; font-weight: 600; color: #f8fafc;">MIT Open Source</div>
+                <div style="font-size: 0.8rem; font-weight: 600; color: #f8fafc;">GNU GPLv3 (Copyleft)</div>
             </div>
             <a href="https://github.com/frambudi75/rstp-streaming-cctv" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="font-size: 0.775rem; padding: 0.45rem 0.85rem;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
