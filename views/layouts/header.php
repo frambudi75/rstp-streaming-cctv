@@ -15,6 +15,8 @@ $activePage = $activePage ?? 'dashboard';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="dark">
     <title><?= e($pageTitle ?? 'TMC Console') ?> // Roadway Surveillance</title>
+    <link rel="icon" type="image/svg+xml" href="<?= APP_URL ?>/assets/img/favicon.svg">
+    <link rel="alternate icon" type="image/png" href="<?= APP_URL ?>/assets/img/favicon.png">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
     <script>
         window.APP_URL = "<?= APP_URL ?>";
@@ -26,14 +28,7 @@ $activePage = $activePage ?? 'dashboard';
 <?php if ($currentUser): ?>
 <header class="navbar">
     <div class="nav-brand">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5">
-            <rect x="2" y="2" width="20" height="20" rx="1"></rect>
-            <circle cx="12" cy="12" r="3"></circle>
-            <line x1="12" y1="2" x2="12" y2="5"></line>
-            <line x1="12" y1="19" x2="12" y2="22"></line>
-            <line x1="2" y1="12" x2="5" y2="12"></line>
-            <line x1="19" y1="12" x2="22" y2="12"></line>
-        </svg>
+        <img src="<?= APP_URL ?>/assets/img/logo.svg" alt="TMC Logo" width="28" height="28" style="display: block; border-radius: 5px;">
         <span>TRAFFIC OPS CONSOLE</span>
         <span class="brand-badge">NODE: :9999</span>
     </div>

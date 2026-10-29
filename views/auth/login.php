@@ -8,6 +8,8 @@ $pageTitle = 'Traffic Operation Console';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login // Traffic Operation Console (TMC)</title>
+    <link rel="icon" type="image/svg+xml" href="<?= APP_URL ?>/assets/img/favicon.svg">
+    <link rel="alternate icon" type="image/png" href="<?= APP_URL ?>/assets/img/favicon.png">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
     <style>
         body {
@@ -270,9 +272,12 @@ $pageTitle = 'Traffic Operation Console';
     <!-- Left Industrial Hero -->
     <div class="auth-hero">
         <div class="hero-top">
-            <div class="hero-badge">
-                <span style="width: 6px; height: 6px; background: #10b981; border-radius: 50%; display: inline-block;"></span>
-                <span>TMC Gateway v1.0 // Online</span>
+            <div style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1.25rem;">
+                <img src="<?= APP_URL ?>/assets/img/logo.svg" alt="TMC Logo" width="44" height="44" style="border-radius: 8px;">
+                <div class="hero-badge" style="margin-bottom: 0;">
+                    <span style="width: 6px; height: 6px; background: #10b981; border-radius: 50%; display: inline-block;"></span>
+                    <span>TMC Gateway v1.1 // Online</span>
+                </div>
             </div>
             <h1 class="hero-title">Traffic & Roadway<br>Video Surveillance</h1>
             <p class="hero-desc">
@@ -308,7 +313,8 @@ $pageTitle = 'Traffic Operation Console';
     <!-- Right Login Form -->
     <div class="auth-form-side">
         <div class="form-box">
-            <div class="form-header">
+            <div class="form-header" style="text-align: center; margin-bottom: 1.5rem;">
+                <img src="<?= APP_URL ?>/assets/img/logo.svg" alt="TMC Logo" width="52" height="52" style="margin-bottom: 0.75rem; border-radius: 10px;">
                 <h2 class="form-title">Autentikasi Operator</h2>
                 <p class="form-subtitle">Masukkan kredensial akun untuk mengakses live grid.</p>
             </div>

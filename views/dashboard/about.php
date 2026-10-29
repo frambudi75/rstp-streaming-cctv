@@ -55,12 +55,8 @@ $totalEvents = MotionEvent::all([], 1, 1)['total'] ?? 0;
 ?>
 
 <div class="toolbar" style="margin-bottom: 1.5rem;">
-    <div class="toolbar-title">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="16" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-        </svg>
+    <div class="toolbar-title" style="display: flex; align-items: center; gap: 0.75rem;">
+        <img src="<?= APP_URL ?>/assets/img/logo.svg" alt="TMC Logo" width="30" height="30" style="border-radius: 6px;">
         <span>Tentang Sistem & Diagnostik Server</span>
     </div>
     <div style="display: flex; gap: 0.5rem; align-items: center;">
