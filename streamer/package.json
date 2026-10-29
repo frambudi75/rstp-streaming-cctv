@@ -1,0 +1,16 @@
+{
+  "name": "rstp-cctv-streamer",
+  "version": "1.0.0",
+  "description": "RTSP to Web Streaming Gateway & Motion Detection Worker",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jpeg-js": "^0.4.4",
+    "ws": "^8.18.0"
+  }
+}

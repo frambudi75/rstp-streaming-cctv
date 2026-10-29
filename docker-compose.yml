@@ -1,0 +1,70 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: cctv_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: rstp_cctv_db
+      MYSQL_ROOT_PASSWORD: root_secure_password
+      MYSQL_USER: cctv_user
+      MYSQL_PASSWORD: cctv_user_password
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./database/seeders.sql:/docker-entrypoint-initdb.d/02_seeders.sql
+    networks:
+      - cctv_net
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.php
+    container_name: cctv_web
+    restart: always
+    ports:
+      - "80:80"
+    environment:
+      APP_ENV: production
+      APP_URL: http://localhost
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: rstp_cctv_db
+      DB_USER: cctv_user
+      DB_PASS: cctv_user_password
+      APP_ENCRYPTION_KEY: cctv_secure_master_key_32chars!
+      INTERNAL_SERVICE_TOKEN: token_stream_bridge_84920481
+      STREAMER_WS_URL: ws://localhost:9999
+    volumes:
+      - .:/var/www/html
+      - capture_storage:/var/www/html/storage/captures
+    depends_on:
+      - db
+    networks:
+      - cctv_net
+
+  streamer:
+    build:
+      context: ./streamer
+      dockerfile: Dockerfile
+    container_name: cctv_streamer
+    restart: always
+    ports:
+      - "9999:9999"
+    environment:
+      PORT: 9999
+      APP_URL: http://web
+      INTERNAL_SERVICE_TOKEN: token_stream_bridge_84920481
+    volumes:
+      - capture_storage:/app/storage/captures
+    depends_on:
+      - web
+    networks:
+      - cctv_net
+
+volumes:
+  db_data:
+  capture_storage:
+
+networks:
+  cctv_net:
+    driver: bridge

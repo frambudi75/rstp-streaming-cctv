@@ -1,0 +1,10 @@
+RewriteEngine On
+RewriteBase /rstp/
+
+# Jika file atau folder fisik ada (misal: /assets/ atau /storage/), layani langsung
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Teruskan seluruh request lainnya ke index.php
+RewriteRule ^(.*)$ index.php [QSA,L]
+

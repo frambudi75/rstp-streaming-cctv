@@ -1,0 +1,10 @@
+.env
+node_modules/
+vendor/
+storage/captures/*
+!storage/captures/.gitkeep
+!storage/captures/.htaccess
+*.log
+.DS_Store
+Thumbs.db
+
