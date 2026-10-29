@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS `cameras` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(100) NOT NULL,
     `location` VARCHAR(255) NULL,
+    `group_name` VARCHAR(100) NULL DEFAULT 'Gedung A',
+    `floor_subgroup` VARCHAR(100) NULL DEFAULT 'Lantai 1',
     `ip_address` VARCHAR(45) NOT NULL,
     `port` INT NOT NULL DEFAULT 554,
     `rtsp_path` VARCHAR(255) NOT NULL DEFAULT '/live/ch0',
@@ -36,7 +38,8 @@ CREATE TABLE IF NOT EXISTS `cameras` (
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_cameras_status` (`status`),
-    INDEX `idx_cameras_motion` (`motion_enabled`)
+    INDEX `idx_cameras_motion` (`motion_enabled`),
+    INDEX `idx_cameras_group_floor` (`group_name`, `floor_subgroup`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `motion_events` (
@@ -50,7 +53,8 @@ CREATE TABLE IF NOT EXISTS `motion_events` (
     CONSTRAINT `fk_motion_camera` FOREIGN KEY (`camera_id`) REFERENCES `cameras` (`id`) ON DELETE CASCADE,
     INDEX `idx_motion_detected_at` (`detected_at`),
     INDEX `idx_motion_is_viewed` (`is_viewed`),
-    INDEX `idx_motion_camera_time` (`camera_id`, `detected_at`)
+    INDEX `idx_motion_camera_time` (`camera_id`, `detected_at`),
+    INDEX `idx_motion_status_date` (`is_viewed`, `detected_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `system_logs` (
@@ -64,6 +68,6 @@ CREATE TABLE IF NOT EXISTS `system_logs` (
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT `fk_logs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
     INDEX `idx_logs_action` (`action`),
-    INDEX `idx_logs_created_at` (`created_at`)
+    INDEX `idx_logs_created_at` (`created_at`),
+    INDEX `idx_logs_user_date` (`user_id`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-

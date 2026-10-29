@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/redis.php';
 
 class MotionEvent {
     public static function all(array $filters = [], int $page = 1, int $limit = 20): array {
@@ -59,22 +60,34 @@ class MotionEvent {
     }
 
     public static function countUnread(): int {
+        $cacheKey = 'cctv:motion:unread';
+        $cached = RedisCache::get($cacheKey);
+        if ($cached !== null && is_int($cached)) {
+            return $cached;
+        }
+
         $db = Database::getConnection();
         $stmt = $db->query('SELECT COUNT(*) FROM motion_events WHERE is_viewed = 0');
-        return (int)$stmt->fetchColumn();
+        $count = (int)$stmt->fetchColumn();
+
+        RedisCache::set($cacheKey, $count, 15);
+        return $count;
     }
 
     public static function create(int $cameraId, string $snapshotPath, float $confidenceScore): int {
         $db = Database::getConnection();
         $stmt = $db->prepare('INSERT INTO motion_events (camera_id, snapshot_path, confidence_score, detected_at) VALUES (?, ?, ?, NOW())');
         $stmt->execute([$cameraId, $snapshotPath, $confidenceScore]);
+        RedisCache::del('cctv:motion:unread');
         return (int)$db->lastInsertId();
     }
 
     public static function markViewed(int $id): bool {
         $db = Database::getConnection();
         $stmt = $db->prepare('UPDATE motion_events SET is_viewed = 1 WHERE id = ?');
-        return $stmt->execute([$id]);
+        $res = $stmt->execute([$id]);
+        RedisCache::del('cctv:motion:unread');
+        return $res;
     }
 
     public static function delete(int $id): bool {
@@ -89,7 +102,8 @@ class MotionEvent {
             }
         }
         $del = $db->prepare('DELETE FROM motion_events WHERE id = ?');
-        return $del->execute([$id]);
+        $res = $del->execute([$id]);
+        RedisCache::del('cctv:motion:unread');
+        return $res;
     }
 }
-

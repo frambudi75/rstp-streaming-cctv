@@ -43,6 +43,7 @@ define('DB_USER', $_ENV['DB_USER'] ?? 'root');
 define('DB_PASS', $_ENV['DB_PASS'] ?? '');
 define('APP_ENCRYPTION_KEY', $_ENV['APP_ENCRYPTION_KEY'] ?? 'cctv_secure_master_key_32chars!');
 define('INTERNAL_SERVICE_TOKEN', $_ENV['INTERNAL_SERVICE_TOKEN'] ?? 'token_stream_bridge_84920481');
+define('REDIS_HOST', $_ENV['REDIS_HOST'] ?? '127.0.0.1');
+define('REDIS_PORT', (int)($_ENV['REDIS_PORT'] ?? 6379));
 define('STREAMER_WS_URL', $_ENV['STREAMER_WS_URL'] ?? 'ws://localhost:9999');
 define('STORAGE_PATH', dirname(__DIR__) . '/storage/captures');
-

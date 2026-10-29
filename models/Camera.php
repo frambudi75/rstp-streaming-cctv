@@ -4,9 +4,16 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/security.php';
+require_once __DIR__ . '/../config/redis.php';
 
 class Camera {
     public static function all(): array {
+        $cacheKey = 'cctv:cameras:all';
+        $cached = RedisCache::get($cacheKey);
+        if ($cached !== null && is_array($cached)) {
+            return $cached;
+        }
+
         $db = Database::getConnection();
         $stmt = $db->query('
             SELECT id, name, location, group_name, floor_subgroup, ip_address, port, rtsp_path, username, status, motion_enabled, motion_sensitivity, last_seen_at 
@@ -17,10 +24,18 @@ class Camera {
         foreach ($cameras as &$cam) {
             $cam['stream_url'] = STREAMER_WS_URL . '/stream?id=' . $cam['id'];
         }
+
+        RedisCache::set($cacheKey, $cameras, 120);
         return $cameras;
     }
 
     public static function findById(int $id): ?array {
+        $cacheKey = 'cctv:camera:' . $id;
+        $cached = RedisCache::get($cacheKey);
+        if ($cached !== null && is_array($cached)) {
+            return $cached;
+        }
+
         $db = Database::getConnection();
         $stmt = $db->prepare('
             SELECT id, name, location, group_name, floor_subgroup, ip_address, port, rtsp_path, username, status, motion_enabled, motion_sensitivity, last_seen_at 
@@ -29,17 +44,31 @@ class Camera {
         ');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
-        return $row ?: null;
+        $result = $row ?: null;
+
+        if ($result !== null) {
+            RedisCache::set($cacheKey, $result, 120);
+        }
+        return $result;
     }
 
     public static function getGroupsAndFloors(): array {
+        $cacheKey = 'cctv:groups_floors';
+        $cached = RedisCache::get($cacheKey);
+        if ($cached !== null && is_array($cached)) {
+            return $cached;
+        }
+
         $db = Database::getConnection();
         $groups = $db->query("SELECT DISTINCT group_name FROM cameras WHERE group_name IS NOT NULL AND group_name != '' ORDER BY group_name ASC")->fetchAll(PDO::FETCH_COLUMN);
         $floors = $db->query("SELECT DISTINCT floor_subgroup FROM cameras WHERE floor_subgroup IS NOT NULL AND floor_subgroup != '' ORDER BY floor_subgroup ASC")->fetchAll(PDO::FETCH_COLUMN);
-        return [
+        $result = [
             'groups' => $groups ?: [],
             'floors' => $floors ?: []
         ];
+
+        RedisCache::set($cacheKey, $result, 300);
+        return $result;
     }
 
     public static function getDecryptedTarget(int $id): ?array {
@@ -106,6 +135,7 @@ class Camera {
             $data['motion_sensitivity'] ?? 'medium'
         ]);
 
+        self::clearCache();
         return (int)$db->lastInsertId();
     }
 
@@ -144,18 +174,32 @@ class Camera {
         }
 
         $stmt = $db->prepare($sql);
-        return $stmt->execute($params);
+        $res = $stmt->execute($params);
+        self::clearCache($id);
+        return $res;
     }
 
     public static function delete(int $id): bool {
         $db = Database::getConnection();
         $stmt = $db->prepare('DELETE FROM cameras WHERE id = ?');
-        return $stmt->execute([$id]);
+        $res = $stmt->execute([$id]);
+        self::clearCache($id);
+        return $res;
     }
 
     public static function updateStatus(int $id, string $status): bool {
         $db = Database::getConnection();
         $stmt = $db->prepare('UPDATE cameras SET status = ?, last_seen_at = IF(? = "online", NOW(), last_seen_at) WHERE id = ?');
-        return $stmt->execute([$status, $status, $id]);
+        $res = $stmt->execute([$status, $status, $id]);
+        self::clearCache($id);
+        return $res;
+    }
+
+    private static function clearCache(?int $id = null): void {
+        RedisCache::del('cctv:cameras:all');
+        RedisCache::del('cctv:groups_floors');
+        if ($id !== null) {
+            RedisCache::del('cctv:camera:' . $id);
+        }
     }
 }

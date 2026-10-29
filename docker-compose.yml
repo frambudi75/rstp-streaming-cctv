@@ -1,4 +1,7 @@
+version: '3.8'
+
 services:
+  # Service 1: MySQL Database with optimized indexing
   db:
     image: mysql:8.0
     container_name: cctv_db
@@ -15,6 +18,20 @@ services:
     networks:
       - cctv_net
 
+  # Service 2: Redis High-Performance Cache & Session Storage
+  redis:
+    image: redis:7-alpine
+    container_name: cctv_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - cctv_net
+
+  # Service 3: Web Backend (PHP 8.5 / Apache) running on Port 2020
   web:
     build:
       context: .
@@ -22,15 +39,17 @@ services:
     container_name: cctv_web
     restart: always
     ports:
-      - "80:80"
+      - "2020:80"
     environment:
       APP_ENV: production
-      APP_URL: http://localhost
+      APP_URL: http://localhost:2020
       DB_HOST: db
       DB_PORT: 3306
       DB_NAME: rstp_cctv_db
       DB_USER: cctv_user
       DB_PASS: cctv_user_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       APP_ENCRYPTION_KEY: cctv_secure_master_key_32chars!
       INTERNAL_SERVICE_TOKEN: token_stream_bridge_84920481
       STREAMER_WS_URL: ws://localhost:9999
@@ -39,9 +58,11 @@ services:
       - capture_storage:/var/www/html/storage/captures
     depends_on:
       - db
+      - redis
     networks:
       - cctv_net
 
+  # Service 4: Node.js Streaming & FFmpeg Gateway (On-Demand Worker)
   streamer:
     build:
       context: ./streamer
@@ -54,15 +75,19 @@ services:
       PORT: 9999
       APP_URL: http://web
       INTERNAL_SERVICE_TOKEN: token_stream_bridge_84920481
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     volumes:
       - capture_storage:/app/storage/captures
     depends_on:
       - web
+      - redis
     networks:
       - cctv_net
 
 volumes:
   db_data:
+  redis_data:
   capture_storage:
 
 networks:
