@@ -20,3 +20,13 @@ Semua perubahan dan pembaruan arsitektural proyek dicatat di sini.
 - **DBD ([docs/DBD.md](file:///d:/xampp/htdocs/rstp/docs/DBD.md)):** Normalisasi data 3NF, strategi composite index, dan kebijakan retensi data 30 hari.
 - **IPD ([docs/IPD.md](file:///d:/xampp/htdocs/rstp/docs/IPD.md)):** Work Breakdown Structure (WBS) 4 milestone dan kriteria penerimaan proyek.
 
+
+## [1.1.0] - 2026-10-29
+
+### Ditambahkan & Ditingkatkan (Enterprise 100+ CCTV Scale & Modern Stack)
+- **Spesifikasi 100+ CCTV Streaming Engine ([docs/TRD.md](file:///d:/xampp/htdocs/rstp/docs/TRD.md#6-spesifikasi-sistem-skala-besar-100-cctv-streaming-engine)):** Ditambahkan kalkulasi beban bandwidth ingest (350 Mbps main vs 40 Mbps sub) & egress, spesifikasi hardware server minimal vs rekomendasi (CPU multi-core, ECC RAM, NVMe, Dual 10 Gbps SFP+), spesifikasi PC operator pemantau, dan 7 pilar arsitektur *Zero-Lag*.
+- **Optimasi Server & Kernel Host ([docs/deployment.md](file:///d:/xampp/htdocs/rstp/docs/deployment.md#3-optimasi-server--kernel-os-untuk-skala-100-cctv)):** Dokumentasi tuning `sysctl.conf` Linux untuk buffer socket TCP/UDP, antrean `somaxconn`, batas `nofile` 65535, dan alokasi resource Docker.
+- **Dukungan PHP 8.5 & Port 2020:** Konfigurasi Dockerfile berbasis `php:8.5-rc-apache` dan port web host `2020:80`.
+- **Integrasi Redis Cache:** Implementasi `RedisCache` singleton untuk query metadata kamera, struktur grup/lantai, dan unread count log gerak dengan sistem invalidasi otomatis.
+- **Compound Database Indexing:** Penambahan index komposit `idx_cameras_group_floor`, `idx_motion_status_date`, dan `idx_logs_user_date` untuk respon query $< 2\text{ms}$.
+- **Perbaikan Dropdown High-Contrast:** Penambahan `<meta name="color-scheme" content="dark">` dan `:root { color-scheme: dark; }` untuk mengatasi bug native popup list di Chromium Windows.

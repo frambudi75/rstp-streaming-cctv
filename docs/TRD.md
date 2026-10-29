@@ -367,3 +367,116 @@ rstp/
 | **Max CPU Consumption** | $< 60\%$ CPU utilization pada 4-8 kamera aktif (dengan optimasi hardware acceleration / copy codec) |
 | **Snapshot Compression** | JPEG Quality 80% (rata-rata ukuran per file 80–150 KB) |
 | **Retention Policy** | Auto-clean snapshot lebih lama dari 30 hari (configurable) |
+
+
+---
+
+## 6. Spesifikasi Sistem Skala Besar (100+ CCTV Streaming Engine)
+
+Bagian ini mendefinisikan rancangan kapasitas, beban komputasi, dan spesifikasi infrastruktur untuk menjalankan pemantauan lebih dari **100 kamera CCTV** secara stabil tanpa lag (*zero-lag*).
+
+### 6.1. Kalkulasi Beban Jaringan & Komputasi (Mathematical Modeling)
+
+Menjalankan 100+ CCTV memerlukan pemahaman terhadap dua jalur lalu lintas data: **Ingest (Kamera ke Server)** dan **Egress (Server ke Browser Operator)**.
+
+#### 1. Jalur Ingest (RTSP dari 100 Kamera ke Server)
+| Kategori Stream | Resolusi & Frame Rate | Bitrate Rata-Rata | Total Bandwidth Ingest (100 CCTV) |
+| :--- | :--- | :--- | :--- |
+| **Main Stream** (1080p FHD) | 1920x1080 @ 25fps (H.264) | 3.5 Mbps | **350 Mbps** (Konstan) |
+| **Sub Stream** (360p SD) | 640x360 @ 15fps (H.264) | 400 kbps | **40 Mbps** (Konstan) |
+
+> [!IMPORTANT]
+> **Aturan Wajib:** Jangan pernah menarik Main Stream untuk tampilan Multi-Grid (2x2, 3x3, 4x4). Selalu gunakan **Sub-Stream** untuk pemantauan grid. Main Stream hanya ditarik ketika operator membuka kamera dalam mode layar penuh (1x1).
+
+#### 2. Jalur Egress (Server ke Browser Operator)
+- Setiap operator yang memantau grid 16 kamera (4x4) menggunakan sub-stream membutuhkan:  
+  $$16 \times 400\text{ kbps} = 6.4\text{ Mbps per workstation}$$
+- Jika terdapat 5 workstation operator yang memantau secara bersamaan:  
+  $$5 \times 6.4\text{ Mbps} = 32\text{ Mbps}$$
+
+---
+
+### 6.2. Spesifikasi Hardware Server (Pusat Kendali / TMC)
+
+#### Spesifikasi Minimal (Kapasitas s/d 100 Kamera, On-Demand Streaming)
+*Direkomendasikan untuk sistem dengan 1–3 workstation operator aktif bersamaan.*
+
+- **Prosesor (CPU):** Intel Core i7 Generasi 10+ / AMD Ryzen 7 3700X / Intel Xeon E-2288G (Minimal 8 Core, 16 Thread @ 3.2 GHz).
+- **Memori (RAM):** 16 GB DDR4 (3200 MHz).
+- **Penyimpanan Primer:** 512 GB NVMe PCIe M.2 SSD (Untuk OS, Docker, Redis Cache, dan database MySQL).
+- **Penyimpanan Log/Capture:** 2 TB Enterprise HDD Surveillance (WD Purple / Seagate SkyHawk) untuk direktori `/storage/captures/`.
+- **Kartu Jaringan (NIC):** 1x Gigabit Ethernet (1000BASE-T) Dedicated Full-Duplex.
+- **Sistem Operasi:** Ubuntu Server 22.04 LTS / 24.04 LTS x86_64 atau Windows Server 2022.
+
+#### Spesifikasi Rekomendasi (Kapasitas 100–300 Kamera, Operasi 24/7 Multi-Operator)
+*Direkomendasikan untuk instalasi Command Center berskala enterprise dengan puluhan monitor aktif.*
+
+- **Prosesor (CPU):** AMD EPYC 7302P (16 Core, 32 Thread) atau Intel Xeon Silver 4314 (16 Core, 32 Thread).
+- **Akselerator Transcoding (GPU):** NVIDIA T4 (16 GB) / RTX A2000 (12 GB) dengan dukungan **NVENC & NVDEC** (untuk akselerasi hardware decoding H.264/H.265).
+- **Memori (RAM):** 32 GB – 64 GB DDR4/DDR5 ECC Registered.
+- **Penyimpanan Primer:** 1 TB NVMe SSD Enterprise (Kioxia / Samsung PM9A3) dalam konfigurasi RAID 1.
+- **Penyimpanan Rekaman & Capture:** 4 TB – 8 TB SAS/SATA Enterprise 7200 RPM RAID 10.
+- **Kartu Jaringan (NIC):** 2x 10 Gbps SFP+ (LACP Link Aggregation / Bonding).
+- **Power Supply:** Redundant PSU (1+1 Hot-swappable 550W+).
+
+---
+
+### 6.3. Spesifikasi Client Workstation (PC Operator Pemantau)
+
+Komputer operator yang bertugas menampilkan grid CCTV di browser harus memiliki kemampuan decode video hardware agar CPU tidak 100%:
+
+- **Prosesor:** Minimal Intel Core i5 Gen 11 / AMD Ryzen 5 4000 series (4 Core, 8 Thread @ 2.8 GHz+).
+- **RAM:** 8 GB – 16 GB DDR4.
+- **Kartu Grafis (GPU):** Intel Iris Xe Graphics / NVIDIA GeForce GTX 1650 atau lebih tinggi (Hardware Video Decode Acceleration wajib aktif di browser).
+- **Layar / Display:** Dual-Monitor Full HD (1920x1080) atau 4K Ultra HD.
+- **Browser:** Google Chrome (v115+), Microsoft Edge (v115+), atau Brave dengan opsi *"Use graphics acceleration when available"* diaktifkan.
+
+---
+
+### 6.4. Tujuh Pilar Arsitektur Anti-Lag (Zero-Lag Blueprint)
+
+```mermaid
+flowchart LR
+    subgraph Cameras["100+ CCTV (Edge)"]
+        direction TB
+        C1["CCTV 01 (Main + Sub)"]
+        C2["CCTV 02 (Main + Sub)"]
+        CN["CCTV 100 (Main + Sub)"]
+    end
+
+    subgraph ServerCore["Streaming Engine & Cache"]
+        direction TB
+        LAZY["On-Demand Ingest (Active Viewers Only)"]
+        COPY["Zero-Transcode Passthrough (-c:v copy)"]
+        REDIS[("Redis Cache: State & Metadata")]
+        MYSQL[("MySQL 8.0: Compound Indexed")]
+    end
+
+    subgraph ClientOpt["Browser Operator"]
+        direction TB
+        VIRT["DOM Virtualization (Max 16 Active)"]
+        HWACC["GPU Hardware Decoded Canvas"]
+    end
+
+    Cameras -->|Sub-Stream (400 kbps)| LAZY
+    LAZY --> COPY
+    COPY --> REDIS
+    COPY -->|WebSocket fMP4| VIRT
+    VIRT --> HWACC
+    ServerCore <--> MYSQL
+```
+
+1. **On-Demand Lazy Ingestion:**  
+   Proses FFmpeg tidak berjalan secara statis untuk 100 kamera. FFmpeg hanya dipanggil ketika ada minimal 1 user yang membuka kamera tersebut (`subscribers > 0`). Ketika tab browser ditutup atau filter gedung dipindahkan, worker otomatis dihentikan setelah batas toleransi 30 detik.
+2. **Dual-Stream Passthrough:**  
+   Simpan dua URL RTSP di profil kamera: URL Main Stream (1080p) dan URL Sub-Stream (360p/D1). Tampilan Live Grid secara otomatis memilih Sub-Stream sehingga konsumsi memori dan bandwidth turun hingga 88%.
+3. **Zero-Transcoding Mode (`-c:v copy`):**  
+   Hindari komputasi decode-encode ulang pada CPU server. Karena kamera IP modern telah memancarkan format H.264 standar, paket NAL unit langsung diremux ke container fMP4 / WebRTC dengan pemakaian CPU $< 0.8\%$ per stream.
+4. **DOM Virtualization di Frontend:**  
+   Browser modern mengalami degradasi render bila terdapat lebih dari 16 elemen video/canvas aktif di satu tab (keterbatasan WebGL contexts). Frontend membatasi grid maksimal 16 kamera aktif (4x4) per tampilan halaman, dilengkapi sistem paginasi instan.
+5. **In-Memory State & Caching (Redis):**  
+   Metadata kamera, query daftar gedung/lantai, dan penghitung event notifikasi tidak menyentuh hard disk melainkan dilayani oleh Redis Cache dalam waktu $< 1$ milidetik.
+6. **Compound Indexing MySQL:**  
+   Query daftar kamera per gedung/lantai menggunakan index komposit `(group_name, floor_subgroup)` dengan waktu eksekusi query stabil di bawah 2 milidetik meski tabel menampung ribuan rekaman.
+7. **Migrasi ke Media Gateway Terdedikasi (MediaMTX / go2rtc):**  
+   Jika kebutuhan berkembang menjadi lebih dari 200 stream simultan atau ratusan operator publik, Node.js gateway dapat ditransisikan ke engine binary C++/Go (*MediaMTX*) sebagai layer transmisi WebRTC berlatensi sub-detik.

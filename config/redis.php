@@ -75,3 +75,4 @@ class RedisCache {
         } catch (Throwable) {}
     }
 }
+

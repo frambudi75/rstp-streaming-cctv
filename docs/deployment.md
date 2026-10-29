@@ -129,3 +129,93 @@ docker compose ps
 # Memeriksa log streaming gateway
 docker compose logs -f streamer
 ```
+
+
+---
+
+## 3. Optimasi Server & Kernel OS untuk Skala 100+ CCTV
+
+Saat melayani 100+ stream RTSP bersamaan, sistem operasi Linux host memerlukan penyesuaian parameter jaringan dan socket descriptor agar tidak mengalami bottleneck *Too many open files* atau *socket packet drop*.
+
+### 3.1. Penyesuaian Kernel Linux (`/etc/sysctl.conf`)
+
+Tambahkan parameter berikut ke file `/etc/sysctl.conf` pada server host:
+
+```ini
+# Meningkatkan batas antrean socket koneksi baru
+net.core.somaxconn = 65535
+
+# Memperbesar buffer penerima dan pengirim jaringan (Penting untuk video UDP/TCP)
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+net.ipv4.tcp_rmem = 4096 87380 16777216
+net.ipv4.tcp_wmem = 4096 65536 16777216
+
+# Memperbesar buffer backlog interface jaringan
+net.core.netdev_max_backlog = 10000
+
+# Mengoptimalkan daur ulang koneksi TCP TIME_WAIT
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_fin_timeout = 15
+
+# Menaikkan batas sistem file descriptors
+fs.file-max = 2097152
+```
+
+Terapkan perubahan dengan menjalankan:
+```bash
+sudo sysctl -p
+```
+
+### 3.2. Penyesuaian Batas File Descriptor (`/etc/security/limits.conf`)
+
+Pastikan proses Docker dan streamer dapat membuka ribuan socket file:
+
+```ini
+* soft nofile 65535
+* hard nofile 65535
+* soft nproc 65535
+* hard nproc 65535
+```
+
+---
+
+## 4. Alokasi Resource Kontainer Docker (100+ CCTV)
+
+Untuk memastikan stabilitas sistem di lingkungan Docker produksi, alokasikan resource limit pada `docker-compose.yml`:
+
+```yaml
+services:
+  db:
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4096M
+        reservations:
+          memory: 2048M
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  web:
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+
+  streamer:
+    deploy:
+      resources:
+        limits:
+          cpus: '8.0'
+          memory: 8192M
+        reservations:
+          cpus: '2.0'
+          memory: 2048M
+```
