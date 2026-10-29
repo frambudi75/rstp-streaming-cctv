@@ -48,6 +48,7 @@ $activePage = $activePage ?? 'dashboard';
             <a href="<?= APP_URL ?>/admin/cameras" class="nav-link <?= $activePage === 'cameras' ? 'active' : '' ?>">Perangkat CCTV</a>
             <a href="<?= APP_URL ?>/admin/users" class="nav-link <?= $activePage === 'users' ? 'active' : '' ?>">Operator</a>
         <?php endif; ?>
+        <a href="<?= APP_URL ?>/about" class="nav-link <?= $activePage === 'about' ? 'active' : '' ?>">Tentang</a>
     </nav>
 
     <div class="nav-actions">

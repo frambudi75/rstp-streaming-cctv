@@ -51,6 +51,12 @@ if ($path === '/dashboard') {
     exit;
 }
 
+if ($path === '/about') {
+    $currentUser = requireAuth();
+    require __DIR__ . '/views/dashboard/about.php';
+    exit;
+}
+
 if ($path === '/motion-events') {
     $controller = new MotionController();
     $controller->index();
@@ -157,4 +163,3 @@ if ($path === '/internal/motion-events' && $method === 'POST') {
 http_response_code(404);
 echo "404 Not Found: " . e($path);
 exit;
-
