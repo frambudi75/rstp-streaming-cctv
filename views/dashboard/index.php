@@ -10,8 +10,8 @@ $floors = $groupData['floors'];
 ?>
 
 <div class="toolbar" style="align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
-    <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-        <div class="toolbar-title" style="margin-right: 0.5rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        <div class="toolbar-title" style="margin-right: 0.25rem;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="2" y="2" width="20" height="20" rx="1"></rect>
                 <line x1="7" y1="2" x2="7" y2="22"></line>
@@ -47,7 +47,17 @@ $floors = $groupData['floors'];
         </span>
     </div>
 
-    <div style="display: flex; gap: 0.5rem; align-items: center;">
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <!-- Toggle AI Person Detection Bounding Box -->
+        <button id="btnToggleAiPerson" class="btn btn-secondary" style="height: 32px; font-size: 0.75rem; padding: 0.2rem 0.65rem; border-color: #059669; color: #34d399; display: flex; align-items: center; gap: 0.4rem;" title="Deteksi Orang Otomatis (Tanpa Capture Disk)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span id="aiStatusText">AI Kotak Orang: MATI</span>
+            <span id="aiStatusDot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
+        </button>
+
         <div class="grid-buttons">
             <button class="btn-grid" data-grid="grid-1" title="1x1 Grid">1x1</button>
             <button class="btn-grid active" data-grid="grid-4" title="2x2 Grid">2x2</button>
@@ -126,8 +136,14 @@ $floors = $groupData['floors'];
         <?php endforeach; ?>
     </div>
 
+    <!-- AI Bounding Box Dependencies (TensorFlow.js + COCO-SSD) -->
+    <script src="<?= APP_URL ?>/assets/js/tf.min.js"></script>
+    <script src="<?= APP_URL ?>/assets/js/coco-ssd.min.js"></script>
+
     <script>
         const playerInstances = {};
+        window.isAiPersonDetectionEnabled = false;
+        window.aiDetectorModel = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             const cameraCards = document.querySelectorAll('.cctv-card');
@@ -169,6 +185,49 @@ $floors = $groupData['floors'];
 
             selGroup.addEventListener('change', applyGroupingFilter);
             selFloor.addEventListener('change', applyGroupingFilter);
+
+            // Toggle AI Person Bounding Box
+            const btnToggleAi = document.getElementById('btnToggleAiPerson');
+            const aiStatusText = document.getElementById('aiStatusText');
+            const aiStatusDot = document.getElementById('aiStatusDot');
+
+            btnToggleAi.addEventListener('click', async () => {
+                if (!window.isAiPersonDetectionEnabled) {
+                    // Nyalakan AI
+                    btnToggleAi.disabled = true;
+                    aiStatusText.textContent = 'Memuat Model AI...';
+                    aiStatusDot.style.background = '#f59e0b';
+
+                    try {
+                        if (!window.aiDetectorModel) {
+                            window.aiDetectorModel = await cocoSsd.load({ base: 'lite_mobilenet_v2' });
+                        }
+                        window.isAiPersonDetectionEnabled = true;
+                        btnToggleAi.style.background = 'rgba(6, 78, 59, 0.4)';
+                        btnToggleAi.style.borderColor = '#10b981';
+                        aiStatusText.textContent = 'AI Kotak Orang: AKTIF';
+                        aiStatusDot.style.background = '#10b981';
+                        aiStatusDot.style.boxShadow = '0 0 8px #10b981';
+                    } catch (err) {
+                        console.error('Gagal memuat AI model:', err);
+                        aiStatusText.textContent = 'Gagal Memuat AI';
+                        aiStatusDot.style.background = '#ef4444';
+                    } finally {
+                        btnToggleAi.disabled = false;
+                    }
+                } else {
+                    // Matikan AI
+                    window.isAiPersonDetectionEnabled = false;
+                    btnToggleAi.style.background = '';
+                    btnToggleAi.style.borderColor = '#334155';
+                    aiStatusText.textContent = 'AI Kotak Orang: MATI';
+                    aiStatusDot.style.background = '#64748b';
+                    aiStatusDot.style.boxShadow = 'none';
+
+                    // Bersihkan kotak deteksi dari semua canvas
+                    Object.values(playerInstances).forEach(p => p.clearAiBoundingBoxes());
+                }
+            });
         });
 
         function toggleCardFullscreen(id) {

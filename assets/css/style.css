@@ -250,6 +250,11 @@ a {
     box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
 }
 
+.cctv-card.has-person {
+    border-color: #10b981;
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.45);
+}
+
 .cctv-header {
     background: #090e1a;
     padding: 0.5rem 0.75rem;
